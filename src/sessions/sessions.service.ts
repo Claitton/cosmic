@@ -68,7 +68,7 @@ export class SessionsService {
         client.on("connect", () => this.logger.log("Ssh conectado."));
         // client.on("close", () => this.setSessionsIsNotRunning(sessionId));
         
-        const response = await new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
             client.on("ready", async () => {
                 
                 this.sessions.push({
@@ -115,6 +115,17 @@ export class SessionsService {
     async list() {
         const sessions = (await this.prismaService.session.findMany()).map(({ host, port, id, running }) => ({ id, host, port, running }));
         return sessions;
+    }
+
+    async shell(sessionId: string) {
+        let session: Session | null = this.sessions.filter(session => session.id === sessionId)[0] ?? null;
+
+        if (!session) {
+            await this.connect(sessionId);
+            session = this.sessions.filter(session => session.id === sessionId)[0];
+        }
+
+        return session.client
     }
 
     // listRunning() {
