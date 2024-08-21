@@ -5,7 +5,7 @@ type Session = {
     host: string;
     port: number;
     client: Client;
-    running: boolean;
+    // running: boolean;
 }
 
 type WsSessionCommand = {

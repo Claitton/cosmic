@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Client } from 'ssh2';
 import { Session } from './types';
+import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class SessionsService {
@@ -9,7 +10,9 @@ export class SessionsService {
     private sessions: Session[] = [];
     private logger: Logger = new Logger("session.service");
 
-    async connect({
+    constructor(private readonly prismaService: PrismaService) {}
+
+    async create({
         host,
         port,
         username,
@@ -20,44 +23,79 @@ export class SessionsService {
         username: string;
         password: string;
     }) {
+        const sessionAlreadyExist = await this.prismaService.session.findFirst({
+            where: {
+                host,
+                port,
+            }
+        });
+
+        if (sessionAlreadyExist) {
+            return {
+                message: "This host already exist.",
+            }
+        };
+
         const id = randomUUID();
-        const c = new Client();
-        c.connect({
+        const _session = {
+            id, 
+            host,
+            port,
+            username,
+            password,
+            running: true
+        };
+
+        const session = await this.prismaService.session.create({ data: _session });
+
+        return {
+            message: "Session has been created.",
+            session
+        };
+    }
+
+    async connect(sessionId: string) {
+        const client = new Client();
+        const { host, port, username, password } = await this.prismaService.session.findUnique({ where: { id: sessionId }});
+
+        client.connect({
             host,
             port,
             username,
             password
         });
 
-        c.on("connect", () => this.logger.log("Ssh conectado."));
-        c.on("close", () => this.setSessionsIsNotRunning(id));
+        client.on("connect", () => this.logger.log("Ssh conectado."));
+        // client.on("close", () => this.setSessionsIsNotRunning(sessionId));
         
         const response = await new Promise((resolve, reject) => {
-            c.on("ready", () => {
-                this.logger.log("Ssh ready.");
+            client.on("ready", async () => {
+                
                 this.sessions.push({
+                    id: sessionId,
                     host,
                     port,
-                    client: c,
-                    id,
-                    running: true
+                    // running: true
+                    client
                 });
-                resolve(true);
+                this.logger.log("Ssh ready.");
+                resolve(true); 
             });
 
-            c.on("error", () => {
+            client.on("error", () => {
                 this.logger.error("Ssh error.");
                 reject(false);
             });
         });
-
-        return {
-            response
-        }
     }
 
     async sendCommand(command: string, sessionId: string) {
-        let session: Session | null = this.sessions[0];
+        let session: Session | null = this.sessions.filter(session => session.id === sessionId)[0] ?? null;
+
+        if (!session) {
+            await this.connect(sessionId);
+            session = this.sessions.filter(session => session.id === sessionId)[0];
+        }
 
         const output = await new Promise((resolve, reject) => {
             session.client.exec(command, (err, channel) => {
@@ -74,26 +112,26 @@ export class SessionsService {
         return output;
     }
 
-    list() {
-        const sessions = this.sessions.map(({ id, host, port }) => ({ id, host, port }));
+    async list() {
+        const sessions = (await this.prismaService.session.findMany()).map(({ host, port, id, running }) => ({ id, host, port, running }));
         return sessions;
     }
 
-    listRunning() {
-        return this.sessions
-            .filter(session => session.running)
-            .map(({ host }) => ({ host }));
-    }
+    // listRunning() {
+    //     return this.sessions
+    //         .filter(session => session.running)
+    //         .map(({ host }) => ({ host }));
+    // }
 
-    setSessionsIsNotRunning(sessionId: string) {
-        for (let i = 0; i < this.sessions.length; i++) {
-            if (this.sessions[i].id === sessionId) {
-                this.sessions[i].running = false;
+    // setSessionsIsNotRunning(sessionId: string) {
+    //     for (let i = 0; i < this.sessions.length; i++) {
+    //         if (this.sessions[i].id === sessionId) {
+    //             // this.sessions[i].running = false;
 
-                break;
-            }
-        }
+    //             break;
+    //         }
+    //     }
 
-        return;
-    }
+    //     return;
+    // }
 }

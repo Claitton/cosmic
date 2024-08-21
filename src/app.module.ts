@@ -3,5 +3,6 @@ import { SessionsModule } from './sessions/sessions.module';
 
 @Module({
   imports: [SessionsModule],
+  providers: [],
 })
 export class AppModule {}

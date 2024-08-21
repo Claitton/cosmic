@@ -10,7 +10,7 @@ export class SessionsController {
     async connectSession(@Body() data: any) {
         const { host, port, username, password } = data;
 
-        const response = await this.sessionsService.connect({
+        const response = await this.sessionsService.create({
             host,
             port,
             username,
@@ -18,18 +18,18 @@ export class SessionsController {
         });
 
         return {
-            response
+            ...response
         };
 
     }
 
     @Get('list')
-    list() {
-        return this.sessionsService.list();
+    async list() {
+        return await this.sessionsService.list();
     }
 
-    @Get('list-running')
-    listRunning() {
-        return this.sessionsService.listRunning();
-    }
+    // @Get('list-running')
+    // listRunning() {
+    //     return this.sessionsService.listRunning();
+    // }
 }
