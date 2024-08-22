@@ -29,34 +29,14 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.server.emit("session-output", output, client.id);
   }
 
-  @SubscribeMessage("xterm-input")
+  @SubscribeMessage("xterm-input-start")
   async shellMessage(client: Socket, payload: any) {
-    console.log(payload)
     const sshClient = await this.sessionsService.shell(payload.sessionId);
+    
     sshClient.shell({}, {}, (err, stream) => {
-      client.on("xterm-input", data => {
-        console.log("input", data); 
-        stream.write(data)
-      });
-      stream.on("data", data => {
-        console.log("output", data.toString("utf-8"))
-        client.emit("xterm-output", data.toString("utf-8"))
-      })
-    })
-    console.log("depois do shell")
-    // shell((err, stream) => {
-    //   // client.on('xterm-input', (data) => {
-    //   //   console.log("xterm-input", data)
-    //   //   stream.write(data);
-    //   // });
-    //   // stream.on('data', (data) => {
-    //   //   console.log("xterm-output", data)
-    //   //   client.emit('xterm-output', data.toString('utf-8'));
-    //   // });
-    // })
-
-
-    return "hello world"
+      client.on("xterm-input", data => stream.write(data));
+      stream.on("data", (data: Buffer) => client.emit("xterm-output", data.toString("utf-8")));
+    });
   }
 
   handleConnection(client: Socket) {

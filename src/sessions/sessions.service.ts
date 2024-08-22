@@ -56,7 +56,7 @@ export class SessionsService {
 
     async connect(sessionId: string) {
         const client = new Client();
-        const { host, port, username, password } = await this.prismaService.session.findUnique({ where: { id: sessionId }});
+        const { id, host, port, username, password } = await this.prismaService.session.findUnique({ where: { id: sessionId }});
 
         client.connect({
             host,
@@ -66,7 +66,7 @@ export class SessionsService {
         });
 
         client.on("connect", () => this.logger.log("Ssh conectado."));
-        // client.on("close", () => this.setSessionsIsNotRunning(sessionId));
+        client.on("close", () => this.finish(id));
         
         await new Promise((resolve, reject) => {
             client.on("ready", async () => {
@@ -75,7 +75,6 @@ export class SessionsService {
                     id: sessionId,
                     host,
                     port,
-                    // running: true
                     client
                 });
                 this.logger.log("Ssh ready.");
@@ -113,7 +112,7 @@ export class SessionsService {
     }
 
     async list() {
-        const sessions = (await this.prismaService.session.findMany()).map(({ host, port, id, running }) => ({ id, host, port, running }));
+        const sessions = (await this.prismaService.session.findMany()).map(({ id, host, port, username, password }) => ({ id, host, port, username, password }));
         return sessions;
     }
 
@@ -128,21 +127,8 @@ export class SessionsService {
         return session.client
     }
 
-    // listRunning() {
-    //     return this.sessions
-    //         .filter(session => session.running)
-    //         .map(({ host }) => ({ host }));
-    // }
-
-    // setSessionsIsNotRunning(sessionId: string) {
-    //     for (let i = 0; i < this.sessions.length; i++) {
-    //         if (this.sessions[i].id === sessionId) {
-    //             // this.sessions[i].running = false;
-
-    //             break;
-    //         }
-    //     }
-
-    //     return;
-    // }
+    finish(sessionId: string) {
+        this.sessions = this.sessions.filter(session => session.id !== sessionId)
+    }
 }
+
