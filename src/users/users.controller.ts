@@ -8,11 +8,11 @@ export class UsersController {
 
     constructor(private readonly userService: UsersService) { }
 
-    @Post()
-    async create(@Body() body: CreateUserDto) {
-        const { email, name, password } = body;
-        return await this.userService.create({ email, name, password });
-    }
+    // @Post()
+    // async create(@Body() body: CreateUserDto) {
+    //     const { email, name, password } = body;
+    //     return await this.userService.create({ email, name, password });
+    // }
 
     @UseGuards(AuthGuard('jwt'))
     @Get(':id')
@@ -20,6 +20,7 @@ export class UsersController {
         return await this.userService.find(userId);
     }
 
+    @UseGuards(AuthGuard('jwt'))
     @Put(':id')
     async update(@Param('id') userId: string, @Body() body: UpdateUserDto) {
         const { email, name } = body;

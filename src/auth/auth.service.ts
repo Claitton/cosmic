@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { compareSync } from "bcrypt"
 import { JwtService } from '@nestjs/jwt';
+import { RegisterUserDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -20,5 +21,21 @@ export class AuthService {
         return {
             access_token: this.jwtService.sign(payload),
         };
+    }
+
+    async register(user: RegisterUserDto) {
+        const { email, name, password } = user;
+
+        const emailAlreadyUsed = await this.userService.exist(user.email);
+
+        if (emailAlreadyUsed) {
+            throw new HttpException('Email already used.', HttpStatus.BAD_REQUEST);
+        }
+
+        const _user = await this.userService.create({ email, name, password });
+
+        return {
+            user: _user
+        }
     }
 }
