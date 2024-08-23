@@ -8,13 +8,14 @@ export class SessionsController {
 
     @Post('connect-session')
     async connectSession(@Body() data: any) {
-        const { host, port, username, password } = data;
+        const { host, port, username, password, title } = data;
 
         const response = await this.sessionsService.create({
             host,
             port,
             username,
-            password
+            password,
+            title
         });
 
         return {

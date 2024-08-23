@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Client } from 'ssh2';
 import { Session } from './types';
 import { PrismaService } from 'src/prisma.service';
+import { Session as SessionModel } from '@prisma/client';
 
 @Injectable()
 export class SessionsService {
@@ -15,13 +16,15 @@ export class SessionsService {
     async create({
         host,
         port,
+        password,
         username,
-        password
+        title
     }: {
         host: string;
         port: number;
         username: string;
         password: string;
+        title: string
     }) {
         const sessionAlreadyExist = await this.prismaService.session.findFirst({
             where: {
@@ -37,13 +40,13 @@ export class SessionsService {
         };
 
         const id = randomUUID();
-        const _session = {
+        const _session: SessionModel = {
             id, 
             host,
             port,
             username,
             password,
-            running: true
+            title
         };
 
         const session = await this.prismaService.session.create({ data: _session });
