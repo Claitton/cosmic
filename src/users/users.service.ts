@@ -37,4 +37,8 @@ export class UsersService {
             user: _user
         }
     }
+
+    async exist(email: string) {
+        return await this.prismaService.user.findFirst({ where: { email }});
+    }
 }
