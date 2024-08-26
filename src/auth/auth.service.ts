@@ -1,8 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UseGuards } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { compareSync } from "bcrypt"
 import { JwtService } from '@nestjs/jwt';
 import { RegisterUserDto } from './dto/auth.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +20,8 @@ export class AuthService {
     async login(user: any) {
         const payload = { email: user.email, sub: user.userId };
         return {
-            access_token: this.jwtService.sign(payload),
+            accessToken: this.jwtService.sign(payload, { expiresIn: '7d' }),
+            refreshToken: this.jwtService.sign({}, { expiresIn: '1d' })
         };
     }
 
@@ -37,5 +39,12 @@ export class AuthService {
         return {
             user: _user
         }
+    }
+
+    async refreshToken() {
+        const refreshToken = this.jwtService.sign({}, { expiresIn: '1d' })
+        return {
+            refreshToken
+        };
     }
 }

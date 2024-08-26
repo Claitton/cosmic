@@ -19,4 +19,10 @@ export class AuthController {
         await this.authService.register({ email, name, password });
         return 'User register with sucess.';
     }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('refresh-token')
+    async refreshToken() {
+        return await this.authService.refreshToken();
+    }
 }
