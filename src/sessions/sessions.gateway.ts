@@ -37,7 +37,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
       client.on("xterm-input", data => stream.write(data));
       stream.on("data", (data: Buffer) => client.emit("xterm-output", data.toString("utf-8")));
     });
-  }
+  };
 
   handleConnection(client: Socket) {
     this.logger.log("Cliente conectado: " + client.id);
@@ -49,5 +49,5 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   afterInit(server: Server) {
     this.logger.log("Servidor Websocket Iniciado.");
-  }
+  };
 }
